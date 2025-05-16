@@ -5,14 +5,17 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.*;
 
 public class USSDMenu {
     private final List<User> users;
     private final BufferedReader reader;
+    private final ExecutorService executorService;
 
     public USSDMenu() {
         users = new ArrayList<>();
         reader = new BufferedReader(new InputStreamReader(System.in));
+        executorService = Executors.newSingleThreadExecutor();
         users.add(new User("0321234567", 100000, "1234"));
         users.add(new User("0339876543", 50000, "5678"));
     }
@@ -20,25 +23,69 @@ public class USSDMenu {
     public void start() {
         System.out.println("Bienvenue sur la simulation Mvola ! Entrez #111# pour commencer.");
         String input = readInput();
+        if (input == null) {
+            expireApplication();
+            return;
+        }
         if (!input.equals("#111#")) {
             System.out.println("Code incorrect. Veuillez entrer #111#.");
+            cleanup();
             return;
         }
         authenticateUser();
+        cleanup();
     }
 
     private String readInput() {
+        Future<String> future = executorService.submit(() -> {
+            try {
+                return reader.readLine();
+            } catch (IOException e) {
+                System.out.println("Erreur de lecture : " + e.getMessage());
+                return "";
+            }
+        });
+
         try {
-            return reader.readLine();
-        } catch (IOException e) {
-            System.out.println("Erreur de lecture : " + e.getMessage());
+            return future.get(20, TimeUnit.SECONDS);
+        } catch (TimeoutException e) {
+            System.out.println("Temps d'attente dépassé (20 secondes).");
+            return null;
+        } catch (InterruptedException | ExecutionException e) {
+            System.out.println("Erreur lors de la lecture de l'entrée : " + e.getMessage());
             return "";
+        }
+    }
+
+    private void expireApplication() {
+        System.out.println("L'application a expiré en raison d'une inactivité de 20 secondes.");
+        cleanup();
+        System.exit(0);
+    }
+
+    private void cleanup() {
+        try {
+            reader.close();
+        } catch (IOException e) {
+            System.out.println("Erreur lors de la fermeture du reader : " + e.getMessage());
+        }
+        executorService.shutdown();
+        try {
+            if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
+                executorService.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executorService.shutdownNow();
         }
     }
 
     private void authenticateUser() {
         System.out.println("Entrez votre numéro de téléphone (ex: 0321234567) :");
         String phoneNumber = readInput();
+        if (phoneNumber == null) {
+            expireApplication();
+            return;
+        }
         User currentUser = findUser(phoneNumber);
         if (currentUser == null) {
             System.out.println("Utilisateur non trouvé.");
@@ -46,6 +93,10 @@ public class USSDMenu {
         }
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!currentUser.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -74,6 +125,10 @@ public class USSDMenu {
             System.out.print("Choisissez une option (1-6) : ");
 
             String choice = readInput();
+            if (choice == null) {
+                expireApplication();
+                return;
+            }
             switch (choice) {
                 case "1" -> buyCreditOrOffer(user);
                 case "2" -> transferMoney(user);
@@ -95,6 +150,10 @@ public class USSDMenu {
         System.out.print("Choisissez une option (1-4) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         switch (choice) {
             case "1" -> buyCreditForOwnNumber(user);
             case "2" -> buyCreditForOtherNumber(user);
@@ -105,12 +164,16 @@ public class USSDMenu {
     }
 
     private void buyCreditForOwnNumber(User user) {
-        System.out.println("\n=== Crédit pour mon numéro ===");
+        System.out.println("\n=== Crédit pour mon HOLÀ numéro ===");
         System.out.println("1. Recharge directement");
         System.out.println("2. Code de recharge");
         System.out.print("Choisissez une option (1-2) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         switch (choice) {
             case "1" -> rechargeDirectly(user, user.getPhoneNumber());
             case "2" -> manageCodeRecharge(user, user.getPhoneNumber());
@@ -121,12 +184,20 @@ public class USSDMenu {
     private void buyCreditForOtherNumber(User user) {
         System.out.println("Entrez le numéro destinataire :");
         String phoneNumber = readInput();
+        if (phoneNumber == null) {
+            expireApplication();
+            return;
+        }
         System.out.println("\n=== Crédit pour autre numéro ===");
         System.out.println("1. Recharge directement");
         System.out.println("2. Code de recharge");
         System.out.print("Choisissez une option (1-2) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         switch (choice) {
             case "1" -> rechargeDirectly(user, phoneNumber);
             case "2" -> manageCodeRecharge(user, phoneNumber);
@@ -137,6 +208,10 @@ public class USSDMenu {
     private void rechargeDirectly(User user, String phoneNumber) {
         System.out.println("Entrez le montant (Ar) :");
         String amountInput = readInput();
+        if (amountInput == null) {
+            expireApplication();
+            return;
+        }
         double amount = parseAmount(amountInput);
         if (amount <= 0) {
             System.out.println("Montant invalide.");
@@ -144,6 +219,10 @@ public class USSDMenu {
         }
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -163,6 +242,10 @@ public class USSDMenu {
         System.out.print("Choisissez une option (1-3) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         switch (choice) {
             case "1" -> buyRechargeCode(user, phoneNumber);
             case "2" -> resendLastPurchase(user);
@@ -182,6 +265,10 @@ public class USSDMenu {
         System.out.print("Choisissez une option (1-6) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         double amount = switch (choice) {
             case "1" -> 1000;
             case "2" -> 2000;
@@ -197,6 +284,10 @@ public class USSDMenu {
         }
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -211,8 +302,16 @@ public class USSDMenu {
     private void resendLastPurchase(User user) {
         System.out.println("Saisir votre référence de transaction :");
         String reference = readInput();
+        if (reference == null) {
+            expireApplication();
+            return;
+        }
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -223,6 +322,10 @@ public class USSDMenu {
     private void resendRechargeCodes(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -240,6 +343,10 @@ public class USSDMenu {
         System.out.print("Choisissez une option (1-4) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         switch (choice) {
             case "1" -> buyMoraOffer(user, user.getPhoneNumber());
             case "2" -> buyFirstOffer(user, user.getPhoneNumber());
@@ -251,6 +358,10 @@ public class USSDMenu {
     private void buyOfferForOtherNumber(User user) {
         System.out.println("Entrez le numéro destinataire :");
         String phoneNumber = readInput();
+        if (phoneNumber == null) {
+            expireApplication();
+            return;
+        }
         System.out.println("Votre offre actuelle est TOKANA");
         System.out.println("\n=== Offre pour autre numéro ===");
         System.out.println("1. MORA (VOIX-SMS-INTERNET)");
@@ -260,6 +371,10 @@ public class USSDMenu {
         System.out.print("Choisissez une option (1-4) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         switch (choice) {
             case "1" -> buyMoraOffer(user, phoneNumber);
             case "2" -> buyFirstOffer(user, phoneNumber);
@@ -278,6 +393,10 @@ public class USSDMenu {
         System.out.print("Choisissez une option (1-5) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         double amount = switch (choice) {
             case "1" -> 500;
             case "2" -> 1000;
@@ -291,6 +410,10 @@ public class USSDMenu {
         }
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -311,6 +434,10 @@ public class USSDMenu {
         System.out.print("Choisissez une option (1-4) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         double amount = switch (choice) {
             case "1" -> 10000;
             case "2" -> 15000;
@@ -324,6 +451,10 @@ public class USSDMenu {
         }
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -338,6 +469,10 @@ public class USSDMenu {
     private void transferMoney(User user) {
         System.out.println("Entrez le numéro de téléphone destinataire :");
         String receiverNumber = readInput();
+        if (receiverNumber == null) {
+            expireApplication();
+            return;
+        }
         User receiver = findUser(receiverNumber);
         if (receiver == null) {
             System.out.println("Destinataire non trouvé.");
@@ -345,6 +480,10 @@ public class USSDMenu {
         }
         System.out.println("Entrez le montant (Ar) :");
         String amountInput = readInput();
+        if (amountInput == null) {
+            expireApplication();
+            return;
+        }
         double amount = parseAmount(amountInput);
         if (amount <= 0) {
             System.out.println("Montant invalide.");
@@ -352,8 +491,16 @@ public class USSDMenu {
         }
         System.out.println("Entrez la description du transfert :");
         String description = readInput();
+        if (description == null) {
+            expireApplication();
+            return;
+        }
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -372,6 +519,10 @@ public class USSDMenu {
         System.out.print("Choisissez une option (1-2) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         switch (choice) {
             case "1" -> mvolaSavings(user);
             case "2" -> mvolaCredit(user);
@@ -388,6 +539,10 @@ public class USSDMenu {
         System.out.print("Choisissez une option (1-4) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         switch (choice) {
             case "1" -> transferToSavings(user);
             case "2" -> transferToMvolaAccount(user);
@@ -400,12 +555,20 @@ public class USSDMenu {
     private void transferToSavings(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
         }
         System.out.println("Entrez le montant (Ar) :");
         String amountInput = readInput();
+        if (amountInput == null) {
+            expireApplication();
+            return;
+        }
         double amount = parseAmount(amountInput);
         if (amount <= 0) {
             System.out.println("Montant invalide.");
@@ -413,6 +576,10 @@ public class USSDMenu {
         }
         System.out.println("Confirmez votre code secret :");
         String confirmPin = readInput();
+        if (confirmPin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(confirmPin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -427,12 +594,20 @@ public class USSDMenu {
     private void transferToMvolaAccount(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
         }
         System.out.println("Entrez le montant (Ar) :");
         String amountInput = readInput();
+        if (amountInput == null) {
+            expireApplication();
+            return;
+        }
         double amount = parseAmount(amountInput);
         if (amount <= 0) {
             System.out.println("Montant invalide.");
@@ -440,6 +615,10 @@ public class USSDMenu {
         }
         System.out.println("Confirmez votre code secret :");
         String confirmPin = readInput();
+        if (confirmPin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(confirmPin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -454,6 +633,10 @@ public class USSDMenu {
     private void checkSavingsBalance(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -464,12 +647,20 @@ public class USSDMenu {
     private void simulateSavings(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
         }
         System.out.println("Entrez le montant (Ar) :");
         String amountInput = readInput();
+        if (amountInput == null) {
+            expireApplication();
+            return;
+        }
         double amount = parseAmount(amountInput);
         if (amount <= 0) {
             System.out.println("Montant invalide.");
@@ -477,6 +668,10 @@ public class USSDMenu {
         }
         System.out.println("Confirmez votre code secret :");
         String confirmPin = readInput();
+        if (confirmPin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(confirmPin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -492,6 +687,10 @@ public class USSDMenu {
         System.out.print("Choisissez une option (1-3) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         switch (choice) {
             case "1" -> mvolaAdvance(user);
             case "2" -> fameno(user);
@@ -509,6 +708,10 @@ public class USSDMenu {
         System.out.print("Choisissez une option (1-4) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         switch (choice) {
             case "1" -> requestAdvance(user);
             case "2" -> repayAdvance(user);
@@ -521,12 +724,20 @@ public class USSDMenu {
     private void requestAdvance(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
         }
         System.out.println("Entrez le montant (Ar) :");
         String amountInput = readInput();
+        if (amountInput == null) {
+            expireApplication();
+            return;
+        }
         double amount = parseAmount(amountInput);
         if (amount <= 0) {
             System.out.println("Montant invalide.");
@@ -534,6 +745,10 @@ public class USSDMenu {
         }
         System.out.println("Confirmez votre code secret :");
         String confirmPin = readInput();
+        if (confirmPin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(confirmPin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -548,12 +763,20 @@ public class USSDMenu {
     private void repayAdvance(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
         }
         System.out.println("Entrez le montant (Ar) :");
         String amountInput = readInput();
+        if (amountInput == null) {
+            expireApplication();
+            return;
+        }
         double amount = parseAmount(amountInput);
         if (amount <= 0) {
             System.out.println("Montant invalide.");
@@ -561,6 +784,10 @@ public class USSDMenu {
         }
         System.out.println("Confirmez votre code secret :");
         String confirmPin = readInput();
+        if (confirmPin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(confirmPin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -575,6 +802,10 @@ public class USSDMenu {
     private void checkAdvanceBalance(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -590,6 +821,10 @@ public class USSDMenu {
         System.out.print("Choisissez une option (1-3) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         switch (choice) {
             case "1" -> addNumberToDirectory(user);
             case "2" -> removeNumberFromDirectory(user);
@@ -601,8 +836,16 @@ public class USSDMenu {
     private void addNumberToDirectory(User user) {
         System.out.println("Entrez le numéro autorisé à rembourser vos avances :");
         String number = readInput();
+        if (number == null) {
+            expireApplication();
+            return;
+        }
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -613,6 +856,10 @@ public class USSDMenu {
     private void removeNumberFromDirectory(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -620,12 +867,20 @@ public class USSDMenu {
         System.out.println("Liste des numéros disponibles : [Aucun]");
         System.out.println("Entrez le numéro à supprimer :");
         String number = readInput();
+        if (number == null) {
+            expireApplication();
+            return;
+        }
         System.out.println("Numéro supprimé.");
     }
 
     private void listDirectory(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -636,6 +891,10 @@ public class USSDMenu {
     private void fameno(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -651,6 +910,10 @@ public class USSDMenu {
         System.out.print("Choisissez une option (1-3) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         switch (choice) {
             case "1" -> requestMikasaAdvance(user);
             case "2" -> repayMikasaAdvance(user);
@@ -662,6 +925,10 @@ public class USSDMenu {
     private void requestMikasaAdvance(User user) {
         System.out.println("Entrez le montant (Ar) :");
         String amountInput = readInput();
+        if (amountInput == null) {
+            expireApplication();
+            return;
+        }
         double amount = parseAmount(amountInput);
         if (amount <= 0) {
             System.out.println("Montant invalide.");
@@ -669,6 +936,10 @@ public class USSDMenu {
         }
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -683,6 +954,10 @@ public class USSDMenu {
     private void repayMikasaAdvance(User user) {
         System.out.println("Entrez le montant (Ar) :");
         String amountInput = readInput();
+        if (amountInput == null) {
+            expireApplication();
+            return;
+        }
         double amount = parseAmount(amountInput);
         if (amount <= 0) {
             System.out.println("Montant invalide.");
@@ -690,6 +965,10 @@ public class USSDMenu {
         }
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -704,6 +983,10 @@ public class USSDMenu {
     private void checkMikasaAdvance(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -718,6 +1001,10 @@ public class USSDMenu {
         System.out.print("Choisissez une option (1-2) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         switch (choice) {
             case "1" -> withdrawFromAgent(user);
             case "2" -> System.out.println("Option non implémentée.");
@@ -728,8 +1015,16 @@ public class USSDMenu {
     private void withdrawFromAgent(User user) {
         System.out.println("Entrez le numéro de téléphone de l’agent Mvola :");
         String agentNumber = readInput();
+        if (agentNumber == null) {
+            expireApplication();
+            return;
+        }
         System.out.println("Entrez le montant (Ar) :");
         String amountInput = readInput();
+        if (amountInput == null) {
+            expireApplication();
+            return;
+        }
         double amount = parseAmount(amountInput);
         if (amount <= 0) {
             System.out.println("Montant invalide.");
@@ -737,6 +1032,10 @@ public class USSDMenu {
         }
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -762,6 +1061,10 @@ public class USSDMenu {
         System.out.print("Choisissez une option (1-9) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         switch (choice) {
             case "1" -> acceptMoneyRequest(user);
             case "2" -> payYasOrMoov(user);
@@ -775,6 +1078,10 @@ public class USSDMenu {
     private void acceptMoneyRequest(User user) {
         System.out.println("Entrez le numéro de l’expéditeur :");
         String senderNumber = readInput();
+        if (senderNumber == null) {
+            expireApplication();
+            return;
+        }
         User sender = findUser(senderNumber);
         if (sender == null) {
             System.out.println("Expéditeur non trouvé.");
@@ -782,6 +1089,10 @@ public class USSDMenu {
         }
         System.out.println("Entrez le montant (Ar) :");
         String amountInput = readInput();
+        if (amountInput == null) {
+            expireApplication();
+            return;
+        }
         double amount = parseAmount(amountInput);
         if (amount <= 0) {
             System.out.println("Montant invalide.");
@@ -789,6 +1100,10 @@ public class USSDMenu {
         }
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -803,8 +1118,16 @@ public class USSDMenu {
     private void payYasOrMoov(User user) {
         System.out.println("Entrez le type (YAS ou MOOV) :");
         String type = readInput();
+        if (type == null) {
+            expireApplication();
+            return;
+        }
         System.out.println("Entrez le montant (Ar) :");
         String amountInput = readInput();
+        if (amountInput == null) {
+            expireApplication();
+            return;
+        }
         double amount = parseAmount(amountInput);
         if (amount <= 0) {
             System.out.println("Montant invalide.");
@@ -812,6 +1135,10 @@ public class USSDMenu {
         }
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -834,6 +1161,10 @@ public class USSDMenu {
         System.out.print("Choisissez une option (1-6) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         switch (choice) {
             case "1" -> payMbalika(user);
             case "2" -> payJirama(user);
@@ -852,6 +1183,10 @@ public class USSDMenu {
         System.out.print("Choisissez une option (1-2) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         switch (choice) {
             case "1" -> buyMbalikaKit(user);
             case "2" -> buyMbalikaRecharge(user);
@@ -862,6 +1197,10 @@ public class USSDMenu {
     private void buyMbalikaKit(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -872,8 +1211,16 @@ public class USSDMenu {
     private void buyMbalikaRecharge(User user) {
         System.out.println("Entrez le numéro du kit :");
         String kitNumber = readInput();
+        if (kitNumber == null) {
+            expireApplication();
+            return;
+        }
         System.out.println("Entrez le montant (Ar) :");
         String amountInput = readInput();
+        if (amountInput == null) {
+            expireApplication();
+            return;
+        }
         double amount = parseAmount(amountInput);
         if (amount <= 0) {
             System.out.println("Montant invalide.");
@@ -881,6 +1228,10 @@ public class USSDMenu {
         }
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -899,6 +1250,10 @@ public class USSDMenu {
         System.out.print("Choisissez une option (1-2) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         switch (choice) {
             case "1" -> payJiramaPrepaid(user);
             case "2" -> payJiramaBill(user);
@@ -914,6 +1269,10 @@ public class USSDMenu {
         System.out.print("Choisissez une option (1-3) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         switch (choice) {
             case "1" -> buyJiramaRecharge(user);
             case "2" -> resendLastJiramaRecharge(user);
@@ -925,12 +1284,20 @@ public class USSDMenu {
     private void buyJiramaRecharge(User user) {
         System.out.println("Entrez la référence client (11 caractères) :");
         String clientReference = readInput();
+        if (clientReference == null) {
+            expireApplication();
+            return;
+        }
         if (clientReference.length() != 11) {
             System.out.println("Référence client invalide.");
             return;
         }
         System.out.println("Entrez le montant (Ar) :");
         String amountInput = readInput();
+        if (amountInput == null) {
+            expireApplication();
+            return;
+        }
         double amount = parseAmount(amountInput);
         if (amount <= 0) {
             System.out.println("Montant invalide.");
@@ -938,6 +1305,10 @@ public class USSDMenu {
         }
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -952,6 +1323,10 @@ public class USSDMenu {
     private void resendLastJiramaRecharge(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -962,12 +1337,20 @@ public class USSDMenu {
     private void regularizeJiramaArrears(User user) {
         System.out.println("Entrez la référence client (11 caractères) :");
         String clientReference = readInput();
+        if (clientReference == null) {
+            expireApplication();
+            return;
+        }
         if (clientReference.length() != 11) {
             System.out.println("Référence client invalide.");
             return;
         }
         System.out.println("Entrez le montant (Ar) :");
         String amountInput = readInput();
+        if (amountInput == null) {
+            expireApplication();
+            return;
+        }
         double amount = parseAmount(amountInput);
         if (amount <= 0) {
             System.out.println("Montant invalide.");
@@ -975,6 +1358,10 @@ public class USSDMenu {
         }
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -997,6 +1384,10 @@ public class USSDMenu {
         System.out.print("Choisissez une option (1-6) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         switch (choice) {
             case "1" -> subscribeToJiramaPayment(user);
             case "2" -> payOwnJiramaBills(user);
@@ -1011,8 +1402,16 @@ public class USSDMenu {
     private void subscribeToJiramaPayment(User user) {
         System.out.println("Entrez la référence client Jirama :");
         String clientReference = readInput();
+        if (clientReference == null) {
+            expireApplication();
+            return;
+        }
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -1023,6 +1422,10 @@ public class USSDMenu {
     private void payOwnJiramaBills(User user) {
         System.out.println("Entrez le montant (Ar) :");
         String amountInput = readInput();
+        if (amountInput == null) {
+            expireApplication();
+            return;
+        }
         double amount = parseAmount(amountInput);
         if (amount <= 0) {
             System.out.println("Montant invalide.");
@@ -1030,6 +1433,10 @@ public class USSDMenu {
         }
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -1044,8 +1451,16 @@ public class USSDMenu {
     private void payThirdPartyJiramaBill(User user) {
         System.out.println("Entrez la référence client Jirama :");
         String clientReference = readInput();
+        if (clientReference == null) {
+            expireApplication();
+            return;
+        }
         System.out.println("Entrez le montant (Ar) :");
         String amountInput = readInput();
+        if (amountInput == null) {
+            expireApplication();
+            return;
+        }
         double amount = parseAmount(amountInput);
         if (amount <= 0) {
             System.out.println("Montant invalide.");
@@ -1053,6 +1468,10 @@ public class USSDMenu {
         }
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -1067,6 +1486,10 @@ public class USSDMenu {
     private void viewJiramaPaymentHistory(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -1077,6 +1500,10 @@ public class USSDMenu {
     private void autoJiramaReading(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -1087,6 +1514,10 @@ public class USSDMenu {
     private void sendJiramaReceiptByEmail(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -1102,6 +1533,10 @@ public class USSDMenu {
         System.out.print("Choisissez une option (1-3) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         switch (choice) {
             case "1" -> buyBaobabPlusRecharge(user);
             case "2" -> resendLastBaobabPlusRecharge(user);
@@ -1113,8 +1548,16 @@ public class USSDMenu {
     private void buyBaobabPlusRecharge(User user) {
         System.out.println("Entrez le numéro de la lampe :");
         String lampNumber = readInput();
+        if (lampNumber == null) {
+            expireApplication();
+            return;
+        }
         System.out.println("Entrez le montant (Ar) :");
         String amountInput = readInput();
+        if (amountInput == null) {
+            expireApplication();
+            return;
+        }
         double amount = parseAmount(amountInput);
         if (amount <= 0) {
             System.out.println("Montant invalide.");
@@ -1122,6 +1565,10 @@ public class USSDMenu {
         }
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -1136,6 +1583,10 @@ public class USSDMenu {
     private void resendLastBaobabPlusRecharge(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -1146,6 +1597,10 @@ public class USSDMenu {
     private void deleteBaobabPlusNumber(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -1160,6 +1615,10 @@ public class USSDMenu {
         System.out.print("Choisissez une option (1-2) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         switch (choice) {
             case "1" -> buyWelightRecharge(user);
             case "2" -> manageWelightClient(user);
@@ -1170,8 +1629,16 @@ public class USSDMenu {
     private void buyWelightRecharge(User user) {
         System.out.println("Entrez le numéro de compteur :");
         String meterNumber = readInput();
+        if (meterNumber == null) {
+            expireApplication();
+            return;
+        }
         System.out.println("Entrez le montant (Ar) :");
         String amountInput = readInput();
+        if (amountInput == null) {
+            expireApplication();
+            return;
+        }
         double amount = parseAmount(amountInput);
         if (amount <= 0) {
             System.out.println("Montant invalide.");
@@ -1179,6 +1646,10 @@ public class USSDMenu {
         }
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -1200,6 +1671,10 @@ public class USSDMenu {
         System.out.print("Choisissez une option (1-5) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         switch (choice) {
             case "1" -> subscribeWelight(user);
             case "2" -> resendWelightRechargeCodes(user);
@@ -1213,6 +1688,10 @@ public class USSDMenu {
     private void subscribeWelight(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -1223,6 +1702,10 @@ public class USSDMenu {
     private void resendWelightRechargeCodes(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -1233,6 +1716,10 @@ public class USSDMenu {
     private void increaseWelightMeterPower(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -1243,6 +1730,10 @@ public class USSDMenu {
     private void relocateWelightMeter(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -1253,6 +1744,10 @@ public class USSDMenu {
     private void deleteWelightMeterNumber(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -1268,6 +1763,10 @@ public class USSDMenu {
         System.out.print("Choisissez une option (1-3) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         switch (choice) {
             case "1" -> buyHeriRecharge(user);
             case "2" -> resendLastHeriRecharge(user);
@@ -1279,8 +1778,16 @@ public class USSDMenu {
     private void buyHeriRecharge(User user) {
         System.out.println("Entrez le numéro de la lampe :");
         String lampNumber = readInput();
+        if (lampNumber == null) {
+            expireApplication();
+            return;
+        }
         System.out.println("Entrez le montant (Ar) :");
         String amountInput = readInput();
+        if (amountInput == null) {
+            expireApplication();
+            return;
+        }
         double amount = parseAmount(amountInput);
         if (amount <= 0) {
             System.out.println("Montant invalide.");
@@ -1288,6 +1795,10 @@ public class USSDMenu {
         }
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -1302,6 +1813,10 @@ public class USSDMenu {
     private void resendLastHeriRecharge(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -1312,6 +1827,10 @@ public class USSDMenu {
     private void deleteHeriNumber(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -1322,8 +1841,16 @@ public class USSDMenu {
     private void payAnkaMadagascar(User user) {
         System.out.println("Entrez le numéro de compteur Anka Madagascar :");
         String meterNumber = readInput();
+        if (meterNumber == null) {
+            expireApplication();
+            return;
+        }
         System.out.println("Entrez le montant (Ar) :");
         String amountInput = readInput();
+        if (amountInput == null) {
+            expireApplication();
+            return;
+        }
         double amount = parseAmount(amountInput);
         if (amount <= 0) {
             System.out.println("Montant invalide.");
@@ -1331,6 +1858,10 @@ public class USSDMenu {
         }
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -1353,6 +1884,10 @@ public class USSDMenu {
         System.out.print("Choisissez une option (1-6) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         switch (choice) {
             case "1" -> payMvolaAssure(user);
             case "2" -> payMtomady(user);
@@ -1364,6 +1899,10 @@ public class USSDMenu {
     private void payMvolaAssure(User user) {
         System.out.println("Entrez le montant (Ar) :");
         String amountInput = readInput();
+        if (amountInput == null) {
+            expireApplication();
+            return;
+        }
         double amount = parseAmount(amountInput);
         if (amount <= 0) {
             System.out.println("Montant invalide.");
@@ -1371,6 +1910,10 @@ public class USSDMenu {
         }
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -1389,6 +1932,10 @@ public class USSDMenu {
         System.out.print("Choisissez une option (1-2) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         switch (choice) {
             case "1" -> subscribeMtomady(user);
             case "2" -> saveForOtherMtomady(user);
@@ -1399,6 +1946,10 @@ public class USSDMenu {
     private void subscribeMtomady(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -1409,6 +1960,10 @@ public class USSDMenu {
     private void saveForOtherMtomady(User user) {
         System.out.println("Entrez le montant (Ar) :");
         String amountInput = readInput();
+        if (amountInput == null) {
+            expireApplication();
+            return;
+        }
         double amount = parseAmount(amountInput);
         if (amount <= 0) {
             System.out.println("Montant invalide.");
@@ -1416,6 +1971,10 @@ public class USSDMenu {
         }
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -1437,6 +1996,10 @@ public class USSDMenu {
         System.out.print("Choisissez une option (1-5) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         switch (choice) {
             case "1" -> checkBalance(user);
             case "2" -> checkLastTransactions(user);
@@ -1450,6 +2013,10 @@ public class USSDMenu {
     private void checkBalance(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -1460,6 +2027,10 @@ public class USSDMenu {
     private void checkLastTransactions(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -1475,6 +2046,10 @@ public class USSDMenu {
         System.out.print("Choisissez une option (1-3) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         switch (choice) {
             case "1" -> addMvolaContact(user);
             case "2" -> viewMvolaContact(user);
@@ -1486,8 +2061,16 @@ public class USSDMenu {
     private void addMvolaContact(User user) {
         System.out.println("Entrez le numéro du contact :");
         String contactNumber = readInput();
+        if (contactNumber == null) {
+            expireApplication();
+            return;
+        }
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -1498,6 +2081,10 @@ public class USSDMenu {
     private void viewMvolaContact(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -1508,6 +2095,10 @@ public class USSDMenu {
     private void deleteMvolaContact(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -1515,12 +2106,20 @@ public class USSDMenu {
         System.out.println("Liste des contacts disponibles : [Aucun]");
         System.out.println("Entrez le numéro à supprimer :");
         String contactNumber = readInput();
+        if (contactNumber == null) {
+            expireApplication();
+            return;
+        }
         System.out.println("Contact supprimé.");
     }
 
     private void checkIdentification(User user) {
         System.out.println("Entrez votre code secret :");
         String pin = readInput();
+        if (pin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(pin)) {
             System.out.println("Code secret incorrect.");
             return;
@@ -1535,6 +2134,10 @@ public class USSDMenu {
         System.out.print("Choisissez une option (1-2) : ");
 
         String choice = readInput();
+        if (choice == null) {
+            expireApplication();
+            return;
+        }
         switch (choice) {
             case "1" -> changePin(user);
             case "2" -> recoverPin(user);
@@ -1545,14 +2148,26 @@ public class USSDMenu {
     private void changePin(User user) {
         System.out.println("Entrez votre ancien code secret :");
         String oldPin = readInput();
+        if (oldPin == null) {
+            expireApplication();
+            return;
+        }
         if (!user.verifyPin(oldPin)) {
             System.out.println("Code secret incorrect.");
             return;
         }
         System.out.println("Entrez le nouveau code secret :");
         String newPin = readInput();
+        if (newPin == null) {
+            expireApplication();
+            return;
+        }
         System.out.println("Confirmez le nouveau code secret :");
         String confirmPin = readInput();
+        if (confirmPin == null) {
+            expireApplication();
+            return;
+        }
         if (!newPin.equals(confirmPin)) {
             System.out.println("Les codes secrets ne correspondent pas.");
             return;
@@ -1564,6 +2179,10 @@ public class USSDMenu {
     private void recoverPin(User user) {
         System.out.println("Entrez votre numéro de téléphone :");
         String phoneNumber = readInput();
+        if (phoneNumber == null) {
+            expireApplication();
+            return;
+        }
         if (!user.getPhoneNumber().equals(phoneNumber)) {
             System.out.println("Numéro incorrect.");
             return;
