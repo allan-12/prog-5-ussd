@@ -44,10 +44,10 @@ public class USSDMenu {
             System.out.println("Utilisateur non trouvé.");
             return;
         }
-        System.out.println("Entrez votre PIN :");
+        System.out.println("Entrez votre code secret :");
         String pin = readInput();
         if (!currentUser.verifyPin(pin)) {
-            System.out.println("PIN incorrect.");
+            System.out.println("Code secret incorrect.");
             return;
         }
         showMainMenu(currentUser);
@@ -71,9 +71,7 @@ public class USSDMenu {
             System.out.println("4. Retrait d’argent");
             System.out.println("5. Paiement Factures & Partenaires");
             System.out.println("6. Mon compte");
-            System.out.println("7. Recevoir de l’argent");
-            System.out.println("8. Banques et Micro-Finances");
-            System.out.print("Choisissez une option (1-8) : ");
+            System.out.print("Choisissez une option (1-6) : ");
 
             String choice = readInput();
             switch (choice) {
@@ -83,8 +81,6 @@ public class USSDMenu {
                 case "4" -> withdrawMoney(user);
                 case "5" -> payBill(user);
                 case "6" -> checkAccount(user);
-                case "7" -> receiveMoney(user);
-                case "8" -> banksAndMicroFinance(user);
                 default -> System.out.println("Option invalide. Veuillez réessayer.");
             }
         }
@@ -716,6 +712,22 @@ public class USSDMenu {
     }
 
     private void withdrawMoney(User user) {
+        System.out.println("\n=== Retrait d’argent ===");
+        System.out.println("1. Auprès d’un Agent Mvola");
+        System.out.println("2. Auprès d’un DAB SGM");
+        System.out.print("Choisissez une option (1-2) : ");
+
+        String choice = readInput();
+        switch (choice) {
+            case "1" -> withdrawFromAgent(user);
+            case "2" -> System.out.println("Option non implémentée.");
+            default -> System.out.println("Option invalide. Veuillez réessayer.");
+        }
+    }
+
+    private void withdrawFromAgent(User user) {
+        System.out.println("Entrez le numéro de téléphone de l’agent Mvola :");
+        String agentNumber = readInput();
         System.out.println("Entrez le montant (Ar) :");
         String amountInput = readInput();
         double amount = parseAmount(amountInput);
@@ -737,40 +749,30 @@ public class USSDMenu {
     }
 
     private void payBill(User user) {
-        System.out.println("Entrez le type de facture (ex: Eau, Électricité) :");
-        String billType = readInput();
-        System.out.println("Entrez le montant (Ar) :");
-        String amountInput = readInput();
-        double amount = parseAmount(amountInput);
-        if (amount <= 0) {
-            System.out.println("Montant invalide.");
-            return;
-        }
-        System.out.println("Entrez votre code secret :");
-        String pin = readInput();
-        if (!user.verifyPin(pin)) {
-            System.out.println("Code secret incorrect.");
-            return;
-        }
-        if (Transaction.payBill(user, billType, amount, pin)) {
-            System.out.println("Réussi");
-        } else {
-            System.out.println("Solde insuffisant.");
+        System.out.println("\n=== Paiement Factures & Partenaires ===");
+        System.out.println("1. Accepter une demande d’argent");
+        System.out.println("2. YAS ou MOOV");
+        System.out.println("3. Électricité et eau");
+        System.out.println("4. Assurances");
+        System.out.println("5. TV & Loisirs");
+        System.out.println("6. Transports Voyages");
+        System.out.println("7. Impôts et cotisations sociales");
+        System.out.println("8. Écoles et universités");
+        System.out.println("9. Autres fournisseurs");
+        System.out.print("Choisissez une option (1-9) : ");
+
+        String choice = readInput();
+        switch (choice) {
+            case "1" -> acceptMoneyRequest(user);
+            case "2" -> payYasOrMoov(user);
+            case "3" -> payElectricityAndWater(user);
+            case "4" -> payInsurance(user);
+            case "5", "6", "7", "8", "9" -> System.out.println("Option non implémentée.");
+            default -> System.out.println("Option invalide. Veuillez réessayer.");
         }
     }
 
-    private void checkAccount(User user) {
-        System.out.println("Entrez votre code secret :");
-        String pin = readInput();
-        if (!user.verifyPin(pin)) {
-            System.out.println("Code secret incorrect.");
-            return;
-        }
-        System.out.println("Solde : " + user.getBalance() + " Ar");
-        System.out.println("Épargne : " + user.getSavings() + " Ar");
-    }
-
-    private void receiveMoney(User user) {
+    private void acceptMoneyRequest(User user) {
         System.out.println("Entrez le numéro de l’expéditeur :");
         String senderNumber = readInput();
         User sender = findUser(senderNumber);
@@ -798,8 +800,775 @@ public class USSDMenu {
         }
     }
 
-    private void banksAndMicroFinance(User user) {
-        System.out.println("Option non implémentée.");
+    private void payYasOrMoov(User user) {
+        System.out.println("Entrez le type (YAS ou MOOV) :");
+        String type = readInput();
+        System.out.println("Entrez le montant (Ar) :");
+        String amountInput = readInput();
+        double amount = parseAmount(amountInput);
+        if (amount <= 0) {
+            System.out.println("Montant invalide.");
+            return;
+        }
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        if (Transaction.payBill(user, type, amount, pin)) {
+            System.out.println("Réussi");
+        } else {
+            System.out.println("Solde insuffisant.");
+        }
+    }
+
+    private void payElectricityAndWater(User user) {
+        System.out.println("\n=== Électricité et eau ===");
+        System.out.println("1. MBALIKA");
+        System.out.println("2. Jirama");
+        System.out.println("3. Baobab+");
+        System.out.println("4. WELIGHT");
+        System.out.println("5. HERI");
+        System.out.println("6. Anka Madagascar");
+        System.out.print("Choisissez une option (1-6) : ");
+
+        String choice = readInput();
+        switch (choice) {
+            case "1" -> payMbalika(user);
+            case "2" -> payJirama(user);
+            case "3" -> payBaobabPlus(user);
+            case "4" -> payWelight(user);
+            case "5" -> payHeri(user);
+            case "6" -> payAnkaMadagascar(user);
+            default -> System.out.println("Option invalide. Veuillez réessayer.");
+        }
+    }
+
+    private void payMbalika(User user) {
+        System.out.println("\n=== MBALIKA ===");
+        System.out.println("1. Achat de kit");
+        System.out.println("2. Achat recharge");
+        System.out.print("Choisissez une option (1-2) : ");
+
+        String choice = readInput();
+        switch (choice) {
+            case "1" -> buyMbalikaKit(user);
+            case "2" -> buyMbalikaRecharge(user);
+            default -> System.out.println("Option invalide. Veuillez réessayer.");
+        }
+    }
+
+    private void buyMbalikaKit(User user) {
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        System.out.println("Réussi");
+    }
+
+    private void buyMbalikaRecharge(User user) {
+        System.out.println("Entrez le numéro du kit :");
+        String kitNumber = readInput();
+        System.out.println("Entrez le montant (Ar) :");
+        String amountInput = readInput();
+        double amount = parseAmount(amountInput);
+        if (amount <= 0) {
+            System.out.println("Montant invalide.");
+            return;
+        }
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        if (Transaction.payBill(user, "MBALIKA Recharge", amount, pin)) {
+            System.out.println("Réussi");
+        } else {
+            System.out.println("Solde insuffisant.");
+        }
+    }
+
+    private void payJirama(User user) {
+        System.out.println("\n=== Jirama ===");
+        System.out.println("1. Compteur prépayé");
+        System.out.println("2. Paiement de facture");
+        System.out.print("Choisissez une option (1-2) : ");
+
+        String choice = readInput();
+        switch (choice) {
+            case "1" -> payJiramaPrepaid(user);
+            case "2" -> payJiramaBill(user);
+            default -> System.out.println("Option invalide. Veuillez réessayer.");
+        }
+    }
+
+    private void payJiramaPrepaid(User user) {
+        System.out.println("\n=== Compteur prépayé ===");
+        System.out.println("1. Acheter recharge");
+        System.out.println("2. Renvoyer dernier code recharge");
+        System.out.println("3. Régulariser arriéré");
+        System.out.print("Choisissez une option (1-3) : ");
+
+        String choice = readInput();
+        switch (choice) {
+            case "1" -> buyJiramaRecharge(user);
+            case "2" -> resendLastJiramaRecharge(user);
+            case "3" -> regularizeJiramaArrears(user);
+            default -> System.out.println("Option invalide. Veuillez réessayer.");
+        }
+    }
+
+    private void buyJiramaRecharge(User user) {
+        System.out.println("Entrez la référence client (11 caractères) :");
+        String clientReference = readInput();
+        if (clientReference.length() != 11) {
+            System.out.println("Référence client invalide.");
+            return;
+        }
+        System.out.println("Entrez le montant (Ar) :");
+        String amountInput = readInput();
+        double amount = parseAmount(amountInput);
+        if (amount <= 0) {
+            System.out.println("Montant invalide.");
+            return;
+        }
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        if (Transaction.payBill(user, "Jirama Recharge", amount, pin)) {
+            System.out.println("Réussi");
+        } else {
+            System.out.println("Solde insuffisant.");
+        }
+    }
+
+    private void resendLastJiramaRecharge(User user) {
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        System.out.println("Dernier code recharge renvoyé.");
+    }
+
+    private void regularizeJiramaArrears(User user) {
+        System.out.println("Entrez la référence client (11 caractères) :");
+        String clientReference = readInput();
+        if (clientReference.length() != 11) {
+            System.out.println("Référence client invalide.");
+            return;
+        }
+        System.out.println("Entrez le montant (Ar) :");
+        String amountInput = readInput();
+        double amount = parseAmount(amountInput);
+        if (amount <= 0) {
+            System.out.println("Montant invalide.");
+            return;
+        }
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        if (Transaction.payBill(user, "Jirama Arriéré", amount, pin)) {
+            System.out.println("Réussi");
+        } else {
+            System.out.println("Solde insuffisant.");
+        }
+    }
+
+    private void payJiramaBill(User user) {
+        System.out.println("\n=== Paiement de facture ===");
+        System.out.println("1. S’inscrire au paiement de Jirama");
+        System.out.println("2. Payer mes factures");
+        System.out.println("3. Payer facture d’un tiers");
+        System.out.println("4. Historique de paiement");
+        System.out.println("5. Auto relevé");
+        System.out.println("6. Reçu par email");
+        System.out.print("Choisissez une option (1-6) : ");
+
+        String choice = readInput();
+        switch (choice) {
+            case "1" -> subscribeToJiramaPayment(user);
+            case "2" -> payOwnJiramaBills(user);
+            case "3" -> payThirdPartyJiramaBill(user);
+            case "4" -> viewJiramaPaymentHistory(user);
+            case "5" -> autoJiramaReading(user);
+            case "6" -> sendJiramaReceiptByEmail(user);
+            default -> System.out.println("Option invalide. Veuillez réessayer.");
+        }
+    }
+
+    private void subscribeToJiramaPayment(User user) {
+        System.out.println("Entrez la référence client Jirama :");
+        String clientReference = readInput();
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        System.out.println("Inscription réussie.");
+    }
+
+    private void payOwnJiramaBills(User user) {
+        System.out.println("Entrez le montant (Ar) :");
+        String amountInput = readInput();
+        double amount = parseAmount(amountInput);
+        if (amount <= 0) {
+            System.out.println("Montant invalide.");
+            return;
+        }
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        if (Transaction.payBill(user, "Jirama Facture", amount, pin)) {
+            System.out.println("Réussi");
+        } else {
+            System.out.println("Solde insuffisant.");
+        }
+    }
+
+    private void payThirdPartyJiramaBill(User user) {
+        System.out.println("Entrez la référence client Jirama :");
+        String clientReference = readInput();
+        System.out.println("Entrez le montant (Ar) :");
+        String amountInput = readInput();
+        double amount = parseAmount(amountInput);
+        if (amount <= 0) {
+            System.out.println("Montant invalide.");
+            return;
+        }
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        if (Transaction.payBill(user, "Jirama Facture Tiers", amount, pin)) {
+            System.out.println("Réussi");
+        } else {
+            System.out.println("Solde insuffisant.");
+        }
+    }
+
+    private void viewJiramaPaymentHistory(User user) {
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        System.out.println("Historique de paiement : [Aucun]");
+    }
+
+    private void autoJiramaReading(User user) {
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        System.out.println("Auto relevé effectué.");
+    }
+
+    private void sendJiramaReceiptByEmail(User user) {
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        System.out.println("Reçu envoyé par email.");
+    }
+
+    private void payBaobabPlus(User user) {
+        System.out.println("\n=== Baobab+ ===");
+        System.out.println("1. Achat recharge Baobab+");
+        System.out.println("2. Renvoi de dernier recharge");
+        System.out.println("3. Suppression numéro");
+        System.out.print("Choisissez une option (1-3) : ");
+
+        String choice = readInput();
+        switch (choice) {
+            case "1" -> buyBaobabPlusRecharge(user);
+            case "2" -> resendLastBaobabPlusRecharge(user);
+            case "3" -> deleteBaobabPlusNumber(user);
+            default -> System.out.println("Option invalide. Veuillez réessayer.");
+        }
+    }
+
+    private void buyBaobabPlusRecharge(User user) {
+        System.out.println("Entrez le numéro de la lampe :");
+        String lampNumber = readInput();
+        System.out.println("Entrez le montant (Ar) :");
+        String amountInput = readInput();
+        double amount = parseAmount(amountInput);
+        if (amount <= 0) {
+            System.out.println("Montant invalide.");
+            return;
+        }
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        if (Transaction.payBill(user, "Baobab+ Recharge", amount, pin)) {
+            System.out.println("Réussi");
+        } else {
+            System.out.println("Solde insuffisant.");
+        }
+    }
+
+    private void resendLastBaobabPlusRecharge(User user) {
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        System.out.println("Dernier recharge renvoyé.");
+    }
+
+    private void deleteBaobabPlusNumber(User user) {
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        System.out.println("Numéro supprimé.");
+    }
+
+    private void payWelight(User user) {
+        System.out.println("\n=== WELIGHT ===");
+        System.out.println("1. Achat de recharge");
+        System.out.println("2. Gestion de client");
+        System.out.print("Choisissez une option (1-2) : ");
+
+        String choice = readInput();
+        switch (choice) {
+            case "1" -> buyWelightRecharge(user);
+            case "2" -> manageWelightClient(user);
+            default -> System.out.println("Option invalide. Veuillez réessayer.");
+        }
+    }
+
+    private void buyWelightRecharge(User user) {
+        System.out.println("Entrez le numéro de compteur :");
+        String meterNumber = readInput();
+        System.out.println("Entrez le montant (Ar) :");
+        String amountInput = readInput();
+        double amount = parseAmount(amountInput);
+        if (amount <= 0) {
+            System.out.println("Montant invalide.");
+            return;
+        }
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        if (Transaction.payBill(user, "WELIGHT Recharge", amount, pin)) {
+            System.out.println("Réussi");
+        } else {
+            System.out.println("Solde insuffisant.");
+        }
+    }
+
+    private void manageWelightClient(User user) {
+        System.out.println("\n=== Gestion de client ===");
+        System.out.println("1. Souscription");
+        System.out.println("2. Renvoi des codes recharges");
+        System.out.println("3. Augmentation puissance compteur");
+        System.out.println("4. Déplacement de compteur");
+        System.out.println("5. Suppression de numéro de compteur");
+        System.out.print("Choisissez une option (1-5) : ");
+
+        String choice = readInput();
+        switch (choice) {
+            case "1" -> subscribeWelight(user);
+            case "2" -> resendWelightRechargeCodes(user);
+            case "3" -> increaseWelightMeterPower(user);
+            case "4" -> relocateWelightMeter(user);
+            case "5" -> deleteWelightMeterNumber(user);
+            default -> System.out.println("Option invalide. Veuillez réessayer.");
+        }
+    }
+
+    private void subscribeWelight(User user) {
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        System.out.println("Souscription réussie.");
+    }
+
+    private void resendWelightRechargeCodes(User user) {
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        System.out.println("Codes recharges renvoyés.");
+    }
+
+    private void increaseWelightMeterPower(User user) {
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        System.out.println("Puissance compteur augmentée.");
+    }
+
+    private void relocateWelightMeter(User user) {
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        System.out.println("Compteur déplacé.");
+    }
+
+    private void deleteWelightMeterNumber(User user) {
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        System.out.println("Numéro de compteur supprimé.");
+    }
+
+    private void payHeri(User user) {
+        System.out.println("\n=== HERI ===");
+        System.out.println("1. Achat recharge HERI");
+        System.out.println("2. Renvoi de dernier recharge");
+        System.out.println("3. Suppression numéro");
+        System.out.print("Choisissez une option (1-3) : ");
+
+        String choice = readInput();
+        switch (choice) {
+            case "1" -> buyHeriRecharge(user);
+            case "2" -> resendLastHeriRecharge(user);
+            case "3" -> deleteHeriNumber(user);
+            default -> System.out.println("Option invalide. Veuillez réessayer.");
+        }
+    }
+
+    private void buyHeriRecharge(User user) {
+        System.out.println("Entrez le numéro de la lampe :");
+        String lampNumber = readInput();
+        System.out.println("Entrez le montant (Ar) :");
+        String amountInput = readInput();
+        double amount = parseAmount(amountInput);
+        if (amount <= 0) {
+            System.out.println("Montant invalide.");
+            return;
+        }
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        if (Transaction.payBill(user, "HERI Recharge", amount, pin)) {
+            System.out.println("Réussi");
+        } else {
+            System.out.println("Solde insuffisant.");
+        }
+    }
+
+    private void resendLastHeriRecharge(User user) {
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        System.out.println("Dernier recharge renvoyé.");
+    }
+
+    private void deleteHeriNumber(User user) {
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        System.out.println("Numéro supprimé.");
+    }
+
+    private void payAnkaMadagascar(User user) {
+        System.out.println("Entrez le numéro de compteur Anka Madagascar :");
+        String meterNumber = readInput();
+        System.out.println("Entrez le montant (Ar) :");
+        String amountInput = readInput();
+        double amount = parseAmount(amountInput);
+        if (amount <= 0) {
+            System.out.println("Montant invalide.");
+            return;
+        }
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        if (Transaction.payBill(user, "Anka Madagascar Recharge", amount, pin)) {
+            System.out.println("Réussi");
+        } else {
+            System.out.println("Solde insuffisant.");
+        }
+    }
+
+    private void payInsurance(User user) {
+        System.out.println("\n=== Assurances ===");
+        System.out.println("1. MVOLA ASSURE");
+        System.out.println("2. MTOMADY");
+        System.out.println("3. ALLIANZ");
+        System.out.println("4. ARO");
+        System.out.println("5. SANLAM");
+        System.out.println("6. NY HAVANA");
+        System.out.print("Choisissez une option (1-6) : ");
+
+        String choice = readInput();
+        switch (choice) {
+            case "1" -> payMvolaAssure(user);
+            case "2" -> payMtomady(user);
+            case "3", "4", "5", "6" -> System.out.println("Option non implémentée.");
+            default -> System.out.println("Option invalide. Veuillez réessayer.");
+        }
+    }
+
+    private void payMvolaAssure(User user) {
+        System.out.println("Entrez le montant (Ar) :");
+        String amountInput = readInput();
+        double amount = parseAmount(amountInput);
+        if (amount <= 0) {
+            System.out.println("Montant invalide.");
+            return;
+        }
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        if (Transaction.payBill(user, "MVOLA ASSURE", amount, pin)) {
+            System.out.println("Réussi");
+        } else {
+            System.out.println("Solde insuffisant.");
+        }
+    }
+
+    private void payMtomady(User user) {
+        System.out.println("\n=== MTOMADY ===");
+        System.out.println("1. S’inscrire au service");
+        System.out.println("2. Épargne pour d’autre");
+        System.out.print("Choisissez une option (1-2) : ");
+
+        String choice = readInput();
+        switch (choice) {
+            case "1" -> subscribeMtomady(user);
+            case "2" -> saveForOtherMtomady(user);
+            default -> System.out.println("Option invalide. Veuillez réessayer.");
+        }
+    }
+
+    private void subscribeMtomady(User user) {
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        System.out.println("Inscription réussie.");
+    }
+
+    private void saveForOtherMtomady(User user) {
+        System.out.println("Entrez le montant (Ar) :");
+        String amountInput = readInput();
+        double amount = parseAmount(amountInput);
+        if (amount <= 0) {
+            System.out.println("Montant invalide.");
+            return;
+        }
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        if (Transaction.saveMoney(user, amount, pin)) {
+            System.out.println("Réussi");
+        } else {
+            System.out.println("Solde insuffisant.");
+        }
+    }
+
+    private void checkAccount(User user) {
+        System.out.println("\n=== Mon compte ===");
+        System.out.println("1. Consultation du solde");
+        System.out.println("2. Consulter mes 3 dernières transactions");
+        System.out.println("3. Mon répertoire Mvola");
+        System.out.println("4. Mon numéro d’identification");
+        System.out.println("5. Mon code secret");
+        System.out.print("Choisissez une option (1-5) : ");
+
+        String choice = readInput();
+        switch (choice) {
+            case "1" -> checkBalance(user);
+            case "2" -> checkLastTransactions(user);
+            case "3" -> manageMvolaDirectory(user);
+            case "4" -> checkIdentification(user);
+            case "5" -> managePin(user);
+            default -> System.out.println("Option invalide. Veuillez réessayer.");
+        }
+    }
+
+    private void checkBalance(User user) {
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        System.out.println("Votre solde actuel est de : " + user.getBalance() + " Ar");
+    }
+
+    private void checkLastTransactions(User user) {
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        System.out.println("Liste des 3 dernières transactions : [Aucune]");
+    }
+
+    private void manageMvolaDirectory(User user) {
+        System.out.println("\n=== Mon répertoire Mvola ===");
+        System.out.println("1. Ajouter un contact");
+        System.out.println("2. Consulter un contact");
+        System.out.println("3. Supprimer un contact");
+        System.out.print("Choisissez une option (1-3) : ");
+
+        String choice = readInput();
+        switch (choice) {
+            case "1" -> addMvolaContact(user);
+            case "2" -> viewMvolaContact(user);
+            case "3" -> deleteMvolaContact(user);
+            default -> System.out.println("Option invalide. Veuillez réessayer.");
+        }
+    }
+
+    private void addMvolaContact(User user) {
+        System.out.println("Entrez le numéro du contact :");
+        String contactNumber = readInput();
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        System.out.println("Contact ajouté.");
+    }
+
+    private void viewMvolaContact(User user) {
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        System.out.println("Liste des contacts : [Aucun]");
+    }
+
+    private void deleteMvolaContact(User user) {
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        System.out.println("Liste des contacts disponibles : [Aucun]");
+        System.out.println("Entrez le numéro à supprimer :");
+        String contactNumber = readInput();
+        System.out.println("Contact supprimé.");
+    }
+
+    private void checkIdentification(User user) {
+        System.out.println("Entrez votre code secret :");
+        String pin = readInput();
+        if (!user.verifyPin(pin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        System.out.println("Informations du compte : Numéro = " + user.getPhoneNumber());
+    }
+
+    private void managePin(User user) {
+        System.out.println("\n=== Mon code secret ===");
+        System.out.println("1. Changer mon code secret");
+        System.out.println("2. Code secret oublié");
+        System.out.print("Choisissez une option (1-2) : ");
+
+        String choice = readInput();
+        switch (choice) {
+            case "1" -> changePin(user);
+            case "2" -> recoverPin(user);
+            default -> System.out.println("Option invalide. Veuillez réessayer.");
+        }
+    }
+
+    private void changePin(User user) {
+        System.out.println("Entrez votre ancien code secret :");
+        String oldPin = readInput();
+        if (!user.verifyPin(oldPin)) {
+            System.out.println("Code secret incorrect.");
+            return;
+        }
+        System.out.println("Entrez le nouveau code secret :");
+        String newPin = readInput();
+        System.out.println("Confirmez le nouveau code secret :");
+        String confirmPin = readInput();
+        if (!newPin.equals(confirmPin)) {
+            System.out.println("Les codes secrets ne correspondent pas.");
+            return;
+        }
+        user.changePin(newPin);
+        System.out.println("Code secret changé avec succès.");
+    }
+
+    private void recoverPin(User user) {
+        System.out.println("Entrez votre numéro de téléphone :");
+        String phoneNumber = readInput();
+        if (!user.getPhoneNumber().equals(phoneNumber)) {
+            System.out.println("Numéro incorrect.");
+            return;
+        }
+        System.out.println("Un code de récupération a été envoyé.");
     }
 
     private double parseAmount(String amountInput) {
